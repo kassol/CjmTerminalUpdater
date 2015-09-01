@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network sql
+QT       += core gui network sql script
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -14,11 +14,15 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
     downloadmanagerHTTP.cpp \
-    databasemanage.cpp
+    databasemanage.cpp \
+    updater.cpp \
+    updateitem.cpp
 
 HEADERS  += \
     downloadmanagerHTTP.h \
-    databasemanage.h
+    databasemanage.h \
+    updater.h \
+    updateitem.h
 
 FORMS    +=
 

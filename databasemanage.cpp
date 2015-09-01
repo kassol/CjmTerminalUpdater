@@ -33,11 +33,15 @@ bool DatabaseManage::connect()
     if (isNewCreated)
     {
         QSqlQuery *query = new QSqlQuery(db);
-        query->exec("create table log (id varchar(64) primary key, "
+        bool isSuccess = query->exec("create table log (id varchar(64) primary key, "
                    "title varchar(100) not null, ver varchar(50) not null default '1.0', "
                    "verCode int not null, url varchar(1000) not null, "
                    "type varchar(20) not null, tsp timestamp, "
-                   "status int not null, filePath varchar(1000) not null");
+                   "status int not null, filePath varchar(1000) not null)");
+        if (!isSuccess)
+        {
+            return false;
+        }
     }
     return true;
 }
