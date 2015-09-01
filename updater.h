@@ -22,6 +22,7 @@ signals:
 public slots:
 
 private:
+    void initWithConfig();
     QString getMacInfo();
     void downloadNext();
     void copyFiles();

@@ -25,6 +25,7 @@ Updater::~Updater()
 void Updater::checkForUpdate()
 {
     updateList.clear();
+    initWithConfig();
     QUrl checkAvailabelUrl;
     checkAvailabelUrl.setUrl(deviceInfoUrl);
     QUrl postData;
@@ -93,6 +94,11 @@ void Updater::checkDownloadListFinished()
         }
     }
     downloadNext();
+}
+
+void Updater::initWithConfig()
+{
+
 }
 
 QString Updater::getMacInfo()
