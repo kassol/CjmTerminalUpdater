@@ -5,6 +5,7 @@
 #include <QAction>
 #include <QTextCodec>
 #include "databasemanage.h"
+#include "updater.h"
 
 int main(int argc, char *argv[])
 {
@@ -32,6 +33,9 @@ int main(int argc, char *argv[])
     if (!DatabaseManage::connect())
     {
     }
+
+    Updater updater;
+    updater.checkForUpdate();
 
     return a.exec();
 }
