@@ -4,6 +4,7 @@
 #include <QIcon>
 #include <QAction>
 #include <QTextCodec>
+#include "databasemanage.h"
 
 int main(int argc, char *argv[])
 {
@@ -28,6 +29,9 @@ int main(int argc, char *argv[])
     trayicon->setContextMenu(trayiconMenu);
 
     trayicon->show();
+    if (!DatabaseManage::connect())
+    {
+    }
 
     return a.exec();
 }
