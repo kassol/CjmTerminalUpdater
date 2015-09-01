@@ -10,6 +10,7 @@ class DatabaseManage : public QObject
 public:
     explicit DatabaseManage(QObject *parent = 0);
     static bool connect();
+    static int getVersionWithTitle(QString title);
 
 signals:
 

@@ -46,3 +46,8 @@ bool DatabaseManage::connect()
     return true;
 }
 
+int DatabaseManage::getVersionWithTitle(QString title)
+{
+    return 1;
+}
+

@@ -7,6 +7,7 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include "updateitem.h"
+#include "downloadmanagerHTTP.h"
 
 class Updater : public QObject
 {
@@ -22,10 +23,13 @@ public slots:
 
 private:
     QString getMacInfo();
+    void downloadNext();
+    void copyFiles();
 
 private slots:
     void checkAvailableFinished();
     void checkDownloadListFinished();
+    void downloadFinished();
 
 private:
     QNetworkAccessManager *manager;
@@ -33,6 +37,12 @@ private:
     static QString deviceInfoUrl;
     static QString downloadListUrl;
     QList<UpdateItem*> updateList;
+    DownloadManagerHTTP *http;
+    QString moduleDir;
+    QString videoDir;
+    QString imageDir;
+    QString docDir;
+    QString othersDir;
 };
 
 #endif // UPDATER_H

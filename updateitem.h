@@ -8,6 +8,7 @@ class UpdateItem : public QObject
     Q_OBJECT
 public:
     explicit UpdateItem(QObject *parent = 0);
+    UpdateItem(const UpdateItem &item);
 
 public:
     QString id;
