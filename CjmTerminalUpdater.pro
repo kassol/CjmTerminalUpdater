@@ -12,22 +12,10 @@ TARGET = CjmTerminalUpdater
 TEMPLATE = app
 
 
-SOURCES += main.cpp \
-    downloadmanagerHTTP.cpp \
-    databasemanage.cpp \
-    updater.cpp \
-    updateitem.cpp \
-    statusdialog.cpp
+SOURCES += main.cpp downloadmanagerHTTP.cpp databasemanage.cpp updater.cpp updateitem.cpp statusdialog.cpp
 
-HEADERS  += \
-    downloadmanagerHTTP.h \
-    databasemanage.h \
-    updater.h \
-    updateitem.h \
-    statusdialog.h
+HEADERS  += downloadmanagerHTTP.h databasemanage.h updater.h updateitem.h statusdialog.h
 
-FORMS    += \
-    statusdialog.ui
+FORMS    += statusdialog.ui
 
-RESOURCES += \
-    resource.qrc
+RESOURCES += resource.qrc

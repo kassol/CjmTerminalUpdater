@@ -19,9 +19,12 @@ int main(int argc, char *argv[])
     QIcon icon(":/update.ico");
     trayicon->setIcon(icon);
 
+    Updater *updater = new Updater();
+
     QMenu *trayiconMenu = new QMenu();
 
     QAction *updateAction = new QAction(QObject::tr("显示主窗口"), NULL);
+    QObject::connect(updateAction, SIGNAL(triggered()), updater, SLOT(showUp()));
     QAction *quitAction = new QAction(QObject::tr("退出"), NULL);
     QObject::connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
 
@@ -34,8 +37,7 @@ int main(int argc, char *argv[])
     {
     }
 
-    Updater updater;
-    updater.checkForUpdate();
+    //updater.checkForUpdate();
 
     return a.exec();
 }

@@ -12,3 +12,9 @@ StatusDialog::~StatusDialog()
 {
     delete ui;
 }
+
+void StatusDialog::closeEvent(QCloseEvent * event)
+{
+    event->ignore();
+    hide();
+}

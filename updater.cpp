@@ -14,6 +14,7 @@ Updater::Updater(QObject *parent)
     , reply(NULL)
 {
     manager = new QNetworkAccessManager(this);
+    mainWindow = new StatusDialog();
 }
 
 Updater::~Updater()
@@ -223,4 +224,9 @@ void Updater::downloadFinished()
     downloadList.pop_front();
     updateList.push_back(item);
     downloadNext();
+}
+
+void Updater::showUp()
+{
+    mainWindow->show();
 }

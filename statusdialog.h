@@ -2,6 +2,8 @@
 #define STATUSDIALOG_H
 
 #include <QDialog>
+#include <QCloseEvent>
+#include "updater.h"
 
 namespace Ui {
 class StatusDialog;
@@ -14,6 +16,9 @@ class StatusDialog : public QDialog
 public:
     explicit StatusDialog(QWidget *parent = 0);
     ~StatusDialog();
+
+protected:
+    void closeEvent(QCloseEvent * event);
 
 private:
     Ui::StatusDialog *ui;

@@ -8,6 +8,9 @@
 #include <QNetworkRequest>
 #include "updateitem.h"
 #include "downloadmanagerHTTP.h"
+#include "statusdialog.h"
+
+class StatusDialog;
 
 class Updater : public QObject
 {
@@ -20,6 +23,7 @@ public:
 signals:
 
 public slots:
+    void showUp();
 
 private:
     void initWithConfig();
@@ -46,6 +50,7 @@ private:
     QString imageDir;
     QString docDir;
     QString othersDir;
+    StatusDialog *mainWindow;
 };
 
 #endif // UPDATER_H
