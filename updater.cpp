@@ -7,6 +7,7 @@
 
 QString Updater::deviceInfoUrl = "http://61.186.130.102:28670/cjmDataServices/data/dataset.do";
 QString Updater::downloadListUrl = "http://61.186.130.102:28670/cjmDataServices/data/dataset.do";
+QString Updater::downloadTempDir = "Update/";
 
 Updater::Updater(QObject *parent)
     : QObject(parent)
@@ -26,6 +27,7 @@ Updater::~Updater()
 void Updater::checkForUpdate()
 {
     updateList.clear();
+    downloadList.clear();
     initWithConfig();
     QUrl checkAvailabelUrl;
     checkAvailabelUrl.setUrl(deviceInfoUrl);
@@ -35,8 +37,8 @@ void Updater::checkForUpdate()
     QNetworkRequest request(checkAvailabelUrl);
     request.setHeader(QNetworkRequest::ContentTypeHeader,
         "application/x-www-form-urlencoded");
-    reply =  manager->post(request, postData.encodedQuery());
     connect(reply, SIGNAL(finished()), this, SLOT(checkAvailableFinished()));
+    reply =  manager->post(request, postData.encodedQuery());
 }
 
 void Updater::checkAvailableFinished()
@@ -57,8 +59,8 @@ void Updater::checkAvailableFinished()
     QNetworkRequest request(checkDownloadListlUrl);
     request.setHeader(QNetworkRequest::ContentTypeHeader,
         "application/x-www-form-urlencoded");
-    reply =  manager->post(request, postData.encodedQuery());
     connect(reply, SIGNAL(finished()), this, SLOT(checkDownloadListFinished()));
+    reply =  manager->post(request, postData.encodedQuery());
 }
 
 void Updater::checkDownloadListFinished()
@@ -79,19 +81,29 @@ void Updater::checkDownloadListFinished()
         item->url = it.value().property("url").toString();
         item->type = it.value().property("type").toString();
         item->status = 0;
-        updateList.push_back(item);
+        downloadList.push_back(item);
     }
 
-    QList<UpdateItem *>::iterator ite= updateList.begin();
-    while (ite != updateList.end())
+    QList<UpdateItem *>::iterator ite= downloadList.begin();
+    while (ite != downloadList.end())
     {
-        if ((*ite)->versionCode == DatabaseManage::getVersionWithTitle((*ite)->title))
+        if (DatabaseManage::getVersionWithTitle((*ite)->title) == -1)
         {
-            ite = updateList.erase(ite);
+            DatabaseManage::insertItem(*ite);
+            ++ite;
         }
         else
         {
-            ++ite;
+            if ((*ite)->versionCode == DatabaseManage::getVersionWithTitle((*ite)->title))
+            {
+                delete *ite;
+                *ite = NULL;
+                ite = downloadList.erase(ite);
+            }
+            else
+            {
+                ++ite;
+            }
         }
     }
     downloadNext();
@@ -123,29 +135,10 @@ void Updater::downloadNext()
     if (!updateList.empty())
     {
         connect(http, SIGNAL(downloadComplete()), this, SLOT(downloadFinished()));
-        UpdateItem item = *(updateList.front());
+        UpdateItem *item = downloadList.front();
         QUrl downloadUrl;
-        downloadUrl.setUrl(item.url);
-        if (item.type == "module")
-        {
-            http->download(downloadUrl, moduleDir);
-        }
-        else if (item.type == "video")
-        {
-            http->download(downloadUrl, videoDir);
-        }
-        else if (item.type == "image")
-        {
-            http->download(downloadUrl, imageDir);
-        }
-        else if (item.type == "doc")
-        {
-            http->download(downloadUrl, docDir);
-        }
-        else if (item.type == "others")
-        {
-            http->download(downloadUrl, othersDir);
-        }
+        downloadUrl.setUrl(item->url);
+        http->download(downloadUrl, downloadTempDir);
     }
     else
     {
@@ -157,15 +150,77 @@ void Updater::downloadNext()
 
 void Updater::copyFiles()
 {
-
+    downloadTempDir = QDir::toNativeSeparators(downloadTempDir);
+    QList<UpdateItem *>::iterator ite = updateList.begin();
+    while (ite != updateList.end())
+    {
+        QFileInfo fileInfo((*ite)->url);
+        QString filename = fileInfo.fileName();
+        if ((*ite)->type == "module")
+        {
+            if(QFile::copy(downloadTempDir+filename, moduleDir+filename))
+            {
+                delete *ite;
+                *ite = NULL;
+                DatabaseManage::setStatus(*ite, 2);
+                ite = updateList.erase(ite);
+                continue;
+            }
+        }
+        else if ((*ite)->type == "video")
+        {
+            if(QFile::copy(downloadTempDir+filename, videoDir+filename))
+            {
+                delete *ite;
+                *ite = NULL;
+                DatabaseManage::setStatus(*ite, 2);
+                ite = updateList.erase(ite);
+                continue;
+            }
+        }
+        else if ((*ite)->type == "image")
+        {
+            if(QFile::copy(downloadTempDir+filename, imageDir+filename))
+            {
+                delete *ite;
+                *ite = NULL;
+                DatabaseManage::setStatus(*ite, 2);
+                ite = updateList.erase(ite);
+                continue;
+            }
+        }
+        else if ((*ite)->type == "doc")
+        {
+            if(QFile::copy(downloadTempDir+filename, docDir+filename))
+            {
+                delete *ite;
+                *ite = NULL;
+                DatabaseManage::setStatus(*ite, 2);
+                ite = updateList.erase(ite);
+                continue;
+            }
+        }
+        else if ((*ite)->type == "others")
+        {
+            if(QFile::copy(downloadTempDir+filename, othersDir+filename))
+            {
+                delete *ite;
+                *ite = NULL;
+                DatabaseManage::setStatus(*ite, 2);
+                ite = updateList.erase(ite);
+                continue;
+            }
+        }
+        ++ite;
+    }
 }
 
 void Updater::downloadFinished()
 {
     disconnect(http, SIGNAL(downloadComplete()), this, SLOT(downloadFinished()));
-    UpdateItem *item = updateList.front();
-    delete item;
-    item = NULL;
-    updateList.pop_front();
+    UpdateItem *item = downloadList.front();
+    DatabaseManage::setStatus(item, 1);
+    downloadList.pop_front();
+    updateList.push_back(item);
     downloadNext();
 }

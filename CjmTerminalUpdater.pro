@@ -16,15 +16,18 @@ SOURCES += main.cpp \
     downloadmanagerHTTP.cpp \
     databasemanage.cpp \
     updater.cpp \
-    updateitem.cpp
+    updateitem.cpp \
+    statusdialog.cpp
 
 HEADERS  += \
     downloadmanagerHTTP.h \
     databasemanage.h \
     updater.h \
-    updateitem.h
+    updateitem.h \
+    statusdialog.h
 
-FORMS    +=
+FORMS    += \
+    statusdialog.ui
 
 RESOURCES += \
     resource.qrc

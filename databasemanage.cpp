@@ -48,6 +48,16 @@ bool DatabaseManage::connect()
 
 int DatabaseManage::getVersionWithTitle(QString title)
 {
-    return 1;
+    return -1;
+}
+
+void DatabaseManage::insertItem(UpdateItem *item)
+{
+
+}
+
+void DatabaseManage::setStatus(UpdateItem *item, int status)
+{
+
 }
 

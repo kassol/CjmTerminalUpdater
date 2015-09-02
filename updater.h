@@ -37,7 +37,9 @@ private:
     QNetworkReply *reply;
     static QString deviceInfoUrl;
     static QString downloadListUrl;
-    QList<UpdateItem*> updateList;
+    static QString downloadTempDir;
+    QList<UpdateItem *> downloadList;
+    QList<UpdateItem *> updateList;
     DownloadManagerHTTP *http;
     QString moduleDir;
     QString videoDir;
