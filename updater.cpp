@@ -3,6 +3,7 @@
 #include <QtScript/QScriptEngine>
 #include <QtScript/QScriptValueIterator>
 #include <QDir>
+#include <QSettings>
 
 QString Updater::deviceInfoUrl = "http://61.186.130.102:28670/cjmDataServices/data/dataset.do";
 QString Updater::downloadListUrl = "http://61.186.130.102:28670/cjmDataServices/data/dataset.do";
@@ -70,15 +71,15 @@ void Updater::checkDownloadListFinished()
     QScriptValueIterator it(result);
     while (it.hasNext()) {
         it.next();
-        UpdateItem item;
-        item.id = it.value().property("id").toString();
-        item.title = it.value().property("title").toString();
-        item.version = it.value().property("ver").toString();
-        item.versionCode = it.value().property("verCode").toInteger();
-        item.url = it.value().property("url").toString();
-        item.type = it.value().property("type").toString();
-        item.status = 0;
-        updateList.push_back(&item);
+        UpdateItem *item = new UpdateItem();
+        item->id = it.value().property("id").toString();
+        item->title = it.value().property("title").toString();
+        item->version = it.value().property("ver").toString();
+        item->versionCode = it.value().property("verCode").toInteger();
+        item->url = it.value().property("url").toString();
+        item->type = it.value().property("type").toString();
+        item->status = 0;
+        updateList.push_back(item);
     }
 
     QList<UpdateItem *>::iterator ite= updateList.begin();
@@ -98,12 +99,19 @@ void Updater::checkDownloadListFinished()
 
 void Updater::initWithConfig()
 {
-
+    QSettings setting("config.ini", QSettings::IniFormat);
+    moduleDir = setting.value("Path/modulePath").toString();
+    videoDir = setting.value("Path/videoPath").toString();
+    imageDir = setting.value("Path/imagePath").toString();
+    docDir = setting.value("Path/docPath").toString();
+    othersDir = setting.value("Path/othersPath").toString();
 }
 
 QString Updater::getMacInfo()
 {
-    return tr("9DFJ98j");
+    QSettings setting("mac.ini", QSettings::IniFormat);
+    QString mac = setting.value("MAC/mac").toString();
+    return mac;
 }
 
 void Updater::downloadNext()
@@ -155,6 +163,9 @@ void Updater::copyFiles()
 void Updater::downloadFinished()
 {
     disconnect(http, SIGNAL(downloadComplete()), this, SLOT(downloadFinished()));
+    UpdateItem *item = updateList.front();
+    delete item;
+    item = NULL;
     updateList.pop_front();
     downloadNext();
 }
