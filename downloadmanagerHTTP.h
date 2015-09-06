@@ -24,7 +24,7 @@ signals:
     void progress(int nPercentage);
 
 public slots:
-    void download(QUrl url, QString dir);
+    void download(const QString &url, QString &downloadDir);
     void pause();
     void resume();
 

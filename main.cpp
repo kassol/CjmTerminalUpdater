@@ -4,12 +4,21 @@
 #include <QIcon>
 #include <QAction>
 #include <QTextCodec>
+#include <QSettings>
 #include "databasemanage.h"
 #include "updater.h"
+
+void setAutoRun(const QString & filePath) {
+    QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+                       QSettings::NativeFormat);
+    settings.setValue("CjmTerminalUpdate", filePath);
+}
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+
+    setAutoRun(QApplication::applicationFilePath());
 
     QTextCodec::setCodecForTr(QTextCodec::codecForName("GBK"));
     QTextCodec::setCodecForCStrings(QTextCodec::codecForName("GBK"));
@@ -35,9 +44,10 @@ int main(int argc, char *argv[])
     trayicon->show();
     if (!DatabaseManage::connect())
     {
+        return -1;
     }
 
-    //updater.checkForUpdate();
+    updater->checkForUpdate();
 
     return a.exec();
 }

@@ -19,6 +19,7 @@ public:
     QString type;
     int status;
     QString filePath;
+    int index;
 
 signals:
 

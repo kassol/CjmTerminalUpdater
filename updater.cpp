@@ -4,9 +4,11 @@
 #include <QtScript/QScriptValueIterator>
 #include <QDir>
 #include <QSettings>
+#include <QMessageBox>
+#include <QProcess>
 
-QString Updater::deviceInfoUrl = "http://61.186.130.102:28670/cjmDataServices/data/dataset.do";
-QString Updater::downloadListUrl = "http://61.186.130.102:28670/cjmDataServices/data/dataset.do";
+QString Updater::deviceInfoUrl = "http://61.186.130.102:28671/cjmDataServices/data/dataset.do";
+QString Updater::downloadListUrl = "http://61.186.130.102:28671/cjmDataServices/data/dataset.do";
 QString Updater::downloadTempDir = "Update/";
 
 Updater::Updater(QObject *parent)
@@ -15,6 +17,8 @@ Updater::Updater(QObject *parent)
 {
     manager = new QNetworkAccessManager(this);
     mainWindow = new StatusDialog();
+    connect(mainWindow, SIGNAL(updateButtonDidTouch()), this, SLOT(updateFiles()));
+    //connect(mainWindow, SIGNAL(checkButtonDidTouch()), this, SLOT(checkForUpdate()));
 }
 
 Updater::~Updater()
@@ -38,8 +42,8 @@ void Updater::checkForUpdate()
     QNetworkRequest request(checkAvailabelUrl);
     request.setHeader(QNetworkRequest::ContentTypeHeader,
         "application/x-www-form-urlencoded");
-    connect(reply, SIGNAL(finished()), this, SLOT(checkAvailableFinished()));
     reply =  manager->post(request, postData.encodedQuery());
+    connect(reply, SIGNAL(finished()), this, SLOT(checkAvailableFinished())); 
 }
 
 void Updater::checkAvailableFinished()
@@ -60,8 +64,8 @@ void Updater::checkAvailableFinished()
     QNetworkRequest request(checkDownloadListlUrl);
     request.setHeader(QNetworkRequest::ContentTypeHeader,
         "application/x-www-form-urlencoded");
-    connect(reply, SIGNAL(finished()), this, SLOT(checkDownloadListFinished()));
     reply =  manager->post(request, postData.encodedQuery());
+    connect(reply, SIGNAL(finished()), this, SLOT(checkDownloadListFinished()));
 }
 
 void Updater::checkDownloadListFinished()
@@ -71,7 +75,9 @@ void Updater::checkDownloadListFinished()
     QScriptEngine engine;
     QScriptValue result = engine.evaluate("("+strReply+")");
 
-    QScriptValueIterator it(result);
+    downloadTempDir = QDir::toNativeSeparators(downloadTempDir);
+    QScriptValue contents = result.property("contents");
+    QScriptValueIterator it(contents);
     while (it.hasNext()) {
         it.next();
         UpdateItem *item = new UpdateItem();
@@ -82,30 +88,38 @@ void Updater::checkDownloadListFinished()
         item->url = it.value().property("url").toString();
         item->type = it.value().property("type").toString();
         item->status = 0;
+        QFileInfo fileInfo(item->url);
+        QString filename = fileInfo.fileName();
+        item->filePath = downloadTempDir+filename;
         downloadList.push_back(item);
     }
+    downloadList.pop_back();
 
     QList<UpdateItem *>::iterator ite= downloadList.begin();
     while (ite != downloadList.end())
     {
-        if (DatabaseManage::getVersionWithTitle((*ite)->title) == -1)
+        if (DatabaseManage::currentVersionIsExpired((*ite)->title, (*ite)->versionCode))
         {
             DatabaseManage::insertItem(*ite);
             ++ite;
         }
         else
         {
-            if ((*ite)->versionCode == DatabaseManage::getVersionWithTitle((*ite)->title))
-            {
-                delete *ite;
-                *ite = NULL;
-                ite = downloadList.erase(ite);
-            }
-            else
-            {
-                ++ite;
-            }
+            delete *ite;
+            *ite = NULL;
+            ite = downloadList.erase(ite);
         }
+    }
+    mainWindow->refreshList();
+    mainWindow->setItemCount(downloadList.count());
+    ite = downloadList.begin();
+    int index = 0;
+    while (ite != downloadList.end())
+    {
+        (*ite)->index = index;
+        mainWindow->addItem(*ite);
+        ++index;
+        ++ite;
     }
     downloadNext();
 }
@@ -122,8 +136,8 @@ void Updater::initWithConfig()
 
 QString Updater::getMacInfo()
 {
-    QSettings setting("mac.ini", QSettings::IniFormat);
-    QString mac = setting.value("MAC/mac").toString();
+    QSettings setting("CjmTerminal.ini", QSettings::IniFormat);
+    QString mac = setting.value("MAC").toString();
     return mac;
 }
 
@@ -133,13 +147,13 @@ void Updater::downloadNext()
     {
         http = new DownloadManagerHTTP(this);
     }
-    if (!updateList.empty())
+    if (!downloadList.empty())
     {
-        connect(http, SIGNAL(downloadComplete()), this, SLOT(downloadFinished()));
         UpdateItem *item = downloadList.front();
         QUrl downloadUrl;
         downloadUrl.setUrl(item->url);
-        http->download(downloadUrl, downloadTempDir);
+        http->download(downloadUrl.toString(), downloadTempDir);
+        connect(http, SIGNAL(downloadComplete()), this, SLOT(downloadFinished()));
     }
     else
     {
@@ -151,63 +165,88 @@ void Updater::downloadNext()
 
 void Updater::copyFiles()
 {
-    downloadTempDir = QDir::toNativeSeparators(downloadTempDir);
     QList<UpdateItem *>::iterator ite = updateList.begin();
+    QDir dir;
     while (ite != updateList.end())
     {
         QFileInfo fileInfo((*ite)->url);
         QString filename = fileInfo.fileName();
         if ((*ite)->type == "module")
         {
-            if(QFile::copy(downloadTempDir+filename, moduleDir+filename))
+            if (!dir.exists(moduleDir))
             {
+                dir.mkdir(moduleDir);
+            }
+            if(QFile::copy((*ite)->filePath, moduleDir+filename))
+            {
+                DatabaseManage::setStatus(*ite, 2);
+                mainWindow->updateState((*ite)->index, 2);
                 delete *ite;
                 *ite = NULL;
-                DatabaseManage::setStatus(*ite, 2);
                 ite = updateList.erase(ite);
                 continue;
             }
         }
         else if ((*ite)->type == "video")
         {
-            if(QFile::copy(downloadTempDir+filename, videoDir+filename))
+            if (!dir.exists(videoDir))
             {
+                dir.mkdir(videoDir);
+            }
+            if(QFile::copy((*ite)->filePath, videoDir+filename))
+            {
+                DatabaseManage::setStatus(*ite, 2);
+                mainWindow->updateState((*ite)->index, 2);
                 delete *ite;
                 *ite = NULL;
-                DatabaseManage::setStatus(*ite, 2);
                 ite = updateList.erase(ite);
                 continue;
             }
         }
         else if ((*ite)->type == "image")
         {
-            if(QFile::copy(downloadTempDir+filename, imageDir+filename))
+            if (!dir.exists(imageDir))
             {
+                dir.mkdir(imageDir);
+            }
+            if(QFile::copy((*ite)->filePath, imageDir+filename))
+            {
+                DatabaseManage::setStatus(*ite, 2);
+                mainWindow->updateState((*ite)->index, 2);
                 delete *ite;
                 *ite = NULL;
-                DatabaseManage::setStatus(*ite, 2);
                 ite = updateList.erase(ite);
                 continue;
             }
         }
         else if ((*ite)->type == "doc")
         {
-            if(QFile::copy(downloadTempDir+filename, docDir+filename))
+            if (!dir.exists(docDir))
             {
+                dir.mkdir(docDir);
+            }
+            if(QFile::copy((*ite)->filePath, docDir+filename))
+            {
+                DatabaseManage::setStatus(*ite, 2);
+                mainWindow->updateState((*ite)->index, 2);
                 delete *ite;
                 *ite = NULL;
-                DatabaseManage::setStatus(*ite, 2);
                 ite = updateList.erase(ite);
                 continue;
             }
         }
         else if ((*ite)->type == "others")
         {
-            if(QFile::copy(downloadTempDir+filename, othersDir+filename))
+            if (!dir.exists(othersDir))
             {
+                dir.mkdir(othersDir);
+            }
+            if(QFile::copy((*ite)->filePath, othersDir+filename))
+            {
+                DatabaseManage::setStatus(*ite, 2);
+                mainWindow->updateState((*ite)->index, 2);
                 delete *ite;
                 *ite = NULL;
-                DatabaseManage::setStatus(*ite, 2);
                 ite = updateList.erase(ite);
                 continue;
             }
@@ -221,6 +260,7 @@ void Updater::downloadFinished()
     disconnect(http, SIGNAL(downloadComplete()), this, SLOT(downloadFinished()));
     UpdateItem *item = downloadList.front();
     DatabaseManage::setStatus(item, 1);
+    mainWindow->updateState(item->index, 1);
     downloadList.pop_front();
     updateList.push_back(item);
     downloadNext();
@@ -229,4 +269,28 @@ void Updater::downloadFinished()
 void Updater::showUp()
 {
     mainWindow->show();
+}
+
+void Updater::updateFiles()
+{
+    QMessageBox msg;
+    msg.setIcon (QMessageBox::Question);
+    msg.setText ("<b>" +
+                 tr ("要进行更新您必须退出智能终端")+"</b>");
+    msg.setInformativeText (tr ("您想现在退出智能终端?"));
+    msg.setStandardButtons (QMessageBox::Yes | QMessageBox::No);
+    if (msg.exec() == QMessageBox::Yes)
+    {
+        QProcess p;
+        p.start("taskkill /IM 1.exe /F");
+        p.waitForFinished();
+        p.start("taskkill /IM 2.exe /F");
+        p.waitForFinished();
+        copyFiles();
+    }
+}
+
+void Updater::progress(int percent)
+{
+    UpdateItem *item = downloadList.front();
 }

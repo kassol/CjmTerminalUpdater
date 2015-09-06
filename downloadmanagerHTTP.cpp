@@ -3,6 +3,7 @@
 #include <QFileInfo>
 #include <QDateTime>
 #include <QDebug>
+#include <QTextStream>
 #include <QDir>
 
 
@@ -28,19 +29,20 @@ DownloadManagerHTTP::~DownloadManagerHTTP()
 }
 
 
-void DownloadManagerHTTP::download(QUrl url, QString dir)
+void DownloadManagerHTTP::download(const QString &url, QString &downloadDir)
 {
-    qDebug() << "download: URL=" <<url.toString();
+    qDebug() << "download: URL=" <<url;
 
-    _URL = url;
-    dir = QDir::toNativeSeparators(dir);
-    if (dir.right(1) != QDir::separator())
+    //_URL = QUrl(url);
+    QString _downloadDir = QDir::toNativeSeparators(downloadDir);
+    QDir dir;
+    if (!dir.exists(_downloadDir))
     {
-        dir = dir+QDir::separator();
+        dir.mkdir(_downloadDir);
     }
 
-    QFileInfo fileInfo(url.toString());
-    _qsFileName = fileInfo.fileName();
+    QFileInfo fileInfo(url);
+    _qsFileName = _downloadDir+fileInfo.fileName();
 
     _nDownloadSize = 0;
     _nDownloadSizeAtPause = 0;

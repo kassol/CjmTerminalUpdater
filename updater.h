@@ -18,12 +18,13 @@ class Updater : public QObject
 public:
     explicit Updater(QObject *parent = 0);
     ~Updater();
-    void checkForUpdate();
 
 signals:
 
 public slots:
+    void checkForUpdate();
     void showUp();
+    void progress(int);
 
 private:
     void initWithConfig();
@@ -35,6 +36,7 @@ private slots:
     void checkAvailableFinished();
     void checkDownloadListFinished();
     void downloadFinished();
+    void updateFiles();
 
 private:
     QNetworkAccessManager *manager;

@@ -16,6 +16,19 @@ class StatusDialog : public QDialog
 public:
     explicit StatusDialog(QWidget *parent = 0);
     ~StatusDialog();
+    void refreshList();
+    void setItemCount(int count);
+    void addItem(UpdateItem* item);
+    void updateState(int row, int status);
+
+public slots:
+    void updateFiles(bool);
+    void checkForUpdate(bool);
+    void updateProgress(int row, int percent);
+
+signals:
+    void updateButtonDidTouch();
+    void checkButtonDidTouch();
 
 protected:
     void closeEvent(QCloseEvent * event);
